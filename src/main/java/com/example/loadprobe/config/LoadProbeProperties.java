@@ -1,6 +1,8 @@
 package com.example.loadprobe.config;
 
 import jakarta.validation.constraints.Min;
+import java.util.ArrayList;
+import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -33,6 +35,13 @@ public class LoadProbeProperties {
     /** 单次查询最多返回的聚合点数量。 */
     @Min(value = 1, message = "loadprobe.max-points 至少为 1")
     private int maxPoints = 2000;
+
+    /**
+     * 免鉴权路径（前缀匹配）。
+     * 默认放行健康检查，方便浏览器/探针直接访问；查询接口仍然需要 X-API-Key。
+     * 配置为空列表即恢复“所有 /api 都要鉴权”。
+     */
+    private List<String> authExemptPaths = new ArrayList<>(List.of("/api/v1/health"));
 
     /** 写入数据库的机器标识。 */
     private String host = "localhost";
@@ -91,5 +100,13 @@ public class LoadProbeProperties {
 
     public void setHost(String host) {
         this.host = host;
+    }
+
+    public List<String> getAuthExemptPaths() {
+        return authExemptPaths;
+    }
+
+    public void setAuthExemptPaths(List<String> authExemptPaths) {
+        this.authExemptPaths = authExemptPaths;
     }
 }

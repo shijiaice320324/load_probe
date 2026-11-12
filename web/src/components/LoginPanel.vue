@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { setApiKey } from '../api/client'
-import { fetchHealth } from '../api/metrics'
+// 用受保护的查询接口校验 Key（/api/v1/health 是免鉴权的，不能用来验 Key）
+import { fetchLatest } from '../api/metrics'
 
 const emit = defineEmits<{ (e: 'success'): void }>()
 
@@ -19,7 +20,7 @@ async function submit() {
   error.value = ''
   setApiKey(key)
   try {
-    await fetchHealth()
+    await fetchLatest()
     emit('success')
   } catch (e) {
     error.value = (e as Error).message

@@ -32,6 +32,9 @@ loadprobe:
   retention-cron: ${LOADPROBE_RETENTION_CRON:0 30 3 * * *}
   # 查询接口鉴权：请求头 X-API-Key 必须等于该值；为空表示不校验（仅限本机调试）
   api-key: ${LOADPROBE_API_KEY:}
+  # 免鉴权路径：健康检查放行，方便浏览器/探针访问；清空即所有 /api 都要鉴权
+  auth-exempt-paths:
+    - /api/v1/health
   # 单次查询最多返回的聚合点数量，超过则返回 400
   max-points: ${LOADPROBE_MAX_POINTS:2000}
   # 机器标识，写入数据库的 host 字段

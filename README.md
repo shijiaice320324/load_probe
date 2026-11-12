@@ -59,6 +59,9 @@ scripts\run.cmd -Interval 10
 ## 查询接口
 
 全部接口需要请求头 `X-API-Key: <密钥>`，缺失或错误返回 `401`。
+**例外**：`GET /api/v1/health` 默认免鉴权（方便浏览器/探针直接看状态），
+可在 `application.yml` 的 `loadprobe.auth-exempt-paths` 里调整，清空即恢复全量鉴权。
+
 时间参数使用 ISO-8601（UTC），例如 `2026-11-12T04:00:00Z`。
 
 ### 1. 系统指标时间序列
@@ -88,13 +91,14 @@ GET /api/v1/metrics/processes?from=<ISO>&to=<ISO>&limit=<1..5000，默认 200>
 GET /api/v1/metrics/latest
 ```
 
-### 4. 健康检查
+### 4. 健康检查（免鉴权）
 
 ```
 GET /api/v1/health
 ```
 
-返回状态、主机名、当前采集间隔、Top-N、保留天数。
+返回状态、主机名、当前采集间隔、Top-N、保留天数。浏览器可直接打开
+`http://127.0.0.1:8080/api/v1/health` 验证服务是否在线。
 
 ## 前端看板（web/）
 
