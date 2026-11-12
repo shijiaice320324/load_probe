@@ -13,11 +13,17 @@ export const RANGE_PRESETS: TimeRange[] = [
 
 const CANDIDATE_INTERVALS = [10, 30, 60, 300, 900, 1800, 3600, 7200, 36000]
 
-/** 根据跨度选一个间隔，保证点数不超过 targetPoints（后端还有一层兜底） */
-export function pickInterval(spanSeconds: number, targetPoints = 400): string {
+/** 根据跨度选一个间隔（秒），保证点数不超过 targetPoints（后端还有一层兜底） */
+export function pickIntervalSeconds(spanSeconds: number, targetPoints = 400): number {
   const wanted = Math.ceil(spanSeconds / targetPoints)
-  const chosen = CANDIDATE_INTERVALS.find((candidate) => candidate >= wanted) ?? CANDIDATE_INTERVALS[CANDIDATE_INTERVALS.length - 1]
-  return `${chosen}s`
+  return (
+    CANDIDATE_INTERVALS.find((candidate) => candidate >= wanted) ??
+    CANDIDATE_INTERVALS[CANDIDATE_INTERVALS.length - 1]
+  )
+}
+
+export function pickInterval(spanSeconds: number, targetPoints = 400): string {
+  return `${pickIntervalSeconds(spanSeconds, targetPoints)}s`
 }
 
 export function toIso(date: Date): string {

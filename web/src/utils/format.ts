@@ -42,3 +42,11 @@ export function formatDateTime(iso: string | undefined | null): string {
     date.getHours()
   )}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
 }
+
+/** 秒数转可读时长：60 → 60 秒，300 → 5 分钟，7200 → 2 小时 */
+export function formatDuration(seconds: number | undefined | null): string {
+  if (seconds === undefined || seconds === null || Number.isNaN(seconds) || seconds <= 0) return '-'
+  if (seconds % 3600 === 0) return `${seconds / 3600} 小时`
+  if (seconds % 60 === 0) return `${seconds / 60} 分钟`
+  return `${seconds} 秒`
+}

@@ -7,8 +7,8 @@ import ProcessTable from './components/ProcessTable.vue'
 import { UNAUTHORIZED_EVENT, clearApiKey, getApiKey } from './api/client'
 import { fetchHealth, fetchLatest, fetchSystemSeries } from './api/metrics'
 import type { Health, Latest, ProcessPoint, SystemPoint } from './api/types'
-import { RANGE_PRESETS, pickInterval, toIso } from './utils/interval'
-import { formatDateTime } from './utils/format'
+import { RANGE_PRESETS, pickIntervalSeconds, toIso } from './utils/interval'
+import { formatDateTime, formatDuration } from './utils/format'
 
 const loggedIn = ref(Boolean(getApiKey()))
 const health = ref<Health | null>(null)
@@ -25,7 +25,11 @@ let timer: number | undefined
 const rangeLabel = computed(
   () => RANGE_PRESETS.find((preset) => preset.seconds === rangeSeconds.value)?.label ?? '自定义'
 )
-const effectiveInterval = computed(() => pickInterval(rangeSeconds.value))
+const bucketSeconds = ref(60)
+const bucketLabel = computed(() => formatDuration(bucketSeconds.value))
+const collectIntervalLabel = computed(() =>
+  health.value ? `${health.value.intervalSeconds} 秒` : '-'
+)
 const hasData = computed(() => points.value.length > 0)
 
 const cpuSeries = computed(() => [
@@ -57,8 +61,12 @@ async function load() {
   try {
     const to = new Date()
     const from = new Date(to.getTime() - rangeSeconds.value * 1000)
+    // 桶不能小于采集周期，否则一个桶里连一个样本都没有，图上会出现断点
+    const collectSeconds = health.value?.intervalSeconds ?? 60
+    const bucket = Math.max(pickIntervalSeconds(rangeSeconds.value), collectSeconds)
+    bucketSeconds.value = bucket
     const [series, latestData, healthData] = await Promise.all([
-      fetchSystemSeries(toIso(from), toIso(to), pickInterval(rangeSeconds.value)),
+      fetchSystemSeries(toIso(from), toIso(to), `${bucket}s`),
       fetchLatest(),
       fetchHealth()
     ])
@@ -160,7 +168,8 @@ onBeforeUnmount(() => {
 
     <p class="statusline">
       <span>{{ rangeLabel }}</span>
-      <span>聚合间隔 {{ effectiveInterval }}</span>
+      <span class="badge">采集周期 {{ collectIntervalLabel }}</span>
+      <span>图表聚合 {{ bucketLabel }}</span>
       <span>数据点 {{ points.length }}</span>
       <span v-if="lastUpdated">更新于 {{ lastUpdated }}</span>
     </p>
