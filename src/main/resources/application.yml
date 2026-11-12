@@ -1,0 +1,50 @@
+server:
+  port: ${LOADPROBE_PORT:8080}
+  shutdown: graceful
+  tomcat:
+    # 本机用户临时目录权限异常，Tomcat 临时目录改到项目内
+    basedir: ${LOADPROBE_TOMCAT_BASEDIR:./work/tomcat}
+
+spring:
+  application:
+    name: load-probe
+  datasource:
+    url: ${LOADPROBE_DB_URL:jdbc:postgresql://127.0.0.1:5432/load_probe}
+    username: ${LOADPROBE_DB_USER:load_probe}
+    password: ${LOADPROBE_DB_PASSWORD:}
+    hikari:
+      maximum-pool-size: 5
+      connection-timeout: 5000
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+  lifecycle:
+    timeout-per-shutdown-phase: 10s
+
+loadprobe:
+  # 采集间隔（秒）：默认 60，最小允许 10
+  interval-seconds: ${LOADPROBE_INTERVAL_SECONDS:60}
+  # 每轮采集 CPU 占用最高的前 N 个进程
+  top-process-count: ${LOADPROBE_TOP_N:10}
+  # 数据保留天数：超过该天数的数据会被清理任务删除
+  retention-days: ${LOADPROBE_RETENTION_DAYS:7}
+  # 清理任务执行时间（cron，默认每天 03:30）
+  retention-cron: ${LOADPROBE_RETENTION_CRON:0 30 3 * * *}
+  # 查询接口鉴权：请求头 X-API-Key 必须等于该值；为空表示不校验（仅限本机调试）
+  api-key: ${LOADPROBE_API_KEY:}
+  # 单次查询最多返回的聚合点数量，超过则返回 400
+  max-points: ${LOADPROBE_MAX_POINTS:2000}
+  # 机器标识，写入数据库的 host 字段
+  host: ${LOADPROBE_HOST:${COMPUTERNAME:localhost}}
+
+logging:
+  file:
+    name: ${LOADPROBE_LOG_FILE:logs/load-probe.log}
+  level:
+    root: INFO
+    com.example.loadprobe: DEBUG
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 7
+      total-size-cap: 200MB
