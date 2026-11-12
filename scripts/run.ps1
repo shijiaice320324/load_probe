@@ -1,4 +1,4 @@
-﻿# 在当前 PowerShell 会话里加载配置并启动应用（手动 jar 方式）
+﻿﻿# 在当前 PowerShell 会话里加载配置并启动应用（手动 jar 方式）
 # 用法： .\scripts\run.ps1            # 使用默认配置
 #        .\scripts\run.ps1 -Interval 10
 param(

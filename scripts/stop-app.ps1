@@ -1,4 +1,4 @@
-﻿param(
+﻿﻿param(
     [int[]]$Ports = @(8080, 5173)
 )
 

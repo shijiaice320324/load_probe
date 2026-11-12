@@ -1,4 +1,4 @@
-﻿# 构建前端静态产物到 web\dist
+﻿﻿# 构建前端静态产物到 web\dist
 $root = Split-Path -Parent $PSScriptRoot
 $web = Join-Path $root 'web'
 $node = Join-Path $root '.tools\node'

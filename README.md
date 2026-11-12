@@ -194,8 +194,19 @@ DEBUG 级别会额外打印 Top 3 进程明细（`com.example.loadprobe` 默认 
 2. 沙箱/受限终端下 WMI 性能计数器不可用 → 采集程序需在普通终端运行（本项目的 `run.ps1` 即可）。
 3. 进程级 CPU 用两次采样的 ticks 差值计算，第一轮样本为累计值，属于正常现象。
 
+## 常见问题
+
+| 现象 | 原因与处理 |
+| --- | --- |
+| 前端控制台/终端刷 `connect ECONNREFUSED 127.0.0.1:8080` | 后端没在运行。另开窗口执行 `scripts\run.cmd` 即可，前端不必重启（代理是逐请求转发的，后端起来就好） |
+| 浏览器打开数据接口返回 `{"error":"unauthorized"...}` | 该接口需要 `X-API-Key` 请求头；只有 `/api/v1/health` 免鉴权。用前端页面或带 header 的 curl |
+| 运行 `.ps1` 提示「因为在此系统上禁止运行脚本」 | 用对应的 `.cmd` 入口，或执行一次 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` |
+| 端口 8080 / 5173 被占用 | `scripts\stop-app.cmd` 按端口结束；前端若被占用 Vite 会自动换到 5174 |
+| 日志里中文变乱码 | `Get-Content logs\load-probe.log -Encoding UTF8 -Tail 50` |
+
 ## 后续可做
 
-- 前端看板（建议同仓库 `web/`，Vue 3 + Vite + ECharts）
+- 前端登录换成 JWT + HttpOnly Cookie（方案 B），前端彻底不持有密钥
 - 注册为 Windows 服务（WinSW）实现 7×24 常驻
 - 多机器采集（表里已预留 `host` 字段）
+- 点某个进程看它的历史曲线（需给 `/metrics/processes` 加 `pid` 过滤）
