@@ -42,6 +42,21 @@ scripts\run.cmd -Interval 10
 
 其他脚本：`scripts\pg-stop.ps1`、`scripts\pg-status.ps1`（同样可用 `powershell -ExecutionPolicy Bypass -File ...` 调用）。
 
+### 启动与停止速查
+
+| 操作 | 命令 | 说明 |
+| --- | --- | --- |
+| 启动数据库 | `scripts\pg-start.cmd` | 已在运行会直接提示 |
+| 停止数据库 | `scripts\pg-stop.cmd` | |
+| 数据库状态 | `scripts\pg-status.cmd` | |
+| 启动后端 | `scripts\run.cmd` | 可加 `-Interval 10` 临时改采集周期 |
+| 启动前端 | `scripts\web-dev.cmd` | 浏览器开 http://127.0.0.1:5173 |
+| **停止前后端** | `scripts\stop-app.cmd` | 按端口 8080/5173 结束进程 |
+| 构建前端 | `scripts\web-build.cmd` | 产物在 `web/dist` |
+
+前端/后端在独立窗口跑时，也可以直接在那个窗口按 `Ctrl+C` 停止。
+`stop-app.cmd` 额外接受端口参数：`scripts\stop-app.cmd -Ports 8080`。
+
 ## 配置
 
 真实配置放 `config/local.env`（已被 `.gitignore` 忽略），模板见 `config/local.env.example`：
