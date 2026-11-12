@@ -21,22 +21,26 @@
 
 ## 启动
 
+> Windows 默认的执行策略是 `Restricted`，直接跑 `.ps1` 会报「因为在此系统上禁止运行脚本」。
+> 因此每个脚本都配了 `.cmd` 入口（内部用 `-ExecutionPolicy Bypass` 调用同名 ps1）。
+> 想直接跑 `.ps1`，可执行一次：`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`。
+
 ```powershell
 # 1) 启动数据库（已运行会直接提示）
-.\scripts\pg-start.ps1
+scripts\pg-start.cmd
 
 # 2) 构建（首次需要联网下载依赖）
 . .\scripts\dev-env.ps1
 mvn clean package
 
 # 3) 启动应用（读取 config/local.env 中的密码与 API Key）
-.\scripts\run.ps1
+scripts\run.cmd
 
 # 可选：临时改采集间隔（最小 10 秒）
-.\scripts\run.ps1 -Interval 10
+scripts\run.cmd -Interval 10
 ```
 
-其他脚本：`scripts/pg-stop.ps1`、`scripts/pg-status.ps1`。
+其他脚本：`scripts\pg-stop.ps1`、`scripts\pg-status.ps1`（同样可用 `powershell -ExecutionPolicy Bypass -File ...` 调用）。
 
 ## 配置
 
@@ -104,13 +108,13 @@ GET /api/v1/health
 
 ```powershell
 # 1) 先启动后端
-.\scripts\run.ps1
+scripts\run.cmd
 # 2) 另开一个窗口启动前端（自动安装依赖）
-.\scripts\web-dev.ps1
+scripts\web-dev.cmd
 # 浏览器打开 http://127.0.0.1:5173，输入 config/local.env 里的 LOADPROBE_API_KEY
 ```
 
-构建静态产物：`.\scripts\web-build.ps1`（输出 `web/dist`）。
+构建静态产物：`scripts\web-build.cmd`（输出 `web/dist`）。
 
 开发时 Vite 把 `/api` 代理到 `http://127.0.0.1:8080`，所以不存在跨域；将来把 `web/dist`
 交给 Nginx 或直接放进后端 `static/`，同样是同源部署。

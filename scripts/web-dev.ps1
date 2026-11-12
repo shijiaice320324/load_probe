@@ -1,4 +1,4 @@
-# 启动前端开发服务器（http://127.0.0.1:5173）
+﻿# 启动前端开发服务器（http://127.0.0.1:5173）
 # 依赖后端已在 8080 运行：先执行 ..\scripts\run.ps1
 $root = Split-Path -Parent $PSScriptRoot
 $web = Join-Path $root 'web'
