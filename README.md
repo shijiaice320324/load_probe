@@ -8,7 +8,7 @@
 - 采集 → 入库 → 查询 全链路已跑通，用 curl 验证过（采集间隔实测 10 秒）
 - 数据保留 7 天，每天 03:30 由清理任务删除过期数据
 - 接口鉴权：请求头 `X-API-Key`
-- 前端暂未开发（后续可放同仓库 `web/` 目录）
+- 前端看板已完成（`web/`，Vue 3 + Vite + ECharts），见下方「前端看板」
 
 ## 环境
 
@@ -91,6 +91,50 @@ GET /api/v1/health
 ```
 
 返回状态、主机名、当前采集间隔、Top-N、保留天数。
+
+## 前端看板（web/）
+
+技术栈：Vue 3 + Vite + TypeScript + ECharts。
+
+![看板截图](docs/dashboard.png)
+
+<p align="center"><img src="docs/login.png" width="360" alt="登录页" /></p>
+
+### 启动
+
+```powershell
+# 1) 先启动后端
+.\scripts\run.ps1
+# 2) 另开一个窗口启动前端（自动安装依赖）
+.\scripts\web-dev.ps1
+# 浏览器打开 http://127.0.0.1:5173，输入 config/local.env 里的 LOADPROBE_API_KEY
+```
+
+构建静态产物：`.\scripts\web-build.ps1`（输出 `web/dist`）。
+
+开发时 Vite 把 `/api` 代理到 `http://127.0.0.1:8080`，所以不存在跨域；将来把 `web/dist`
+交给 Nginx 或直接放进后端 `static/`，同样是同源部署。
+
+### 鉴权（方案 A）
+
+- 首次进入要求输入 API Key，存在 `sessionStorage`（关闭标签页即失效）
+- 所有请求由 `src/api/client.ts` 统一加 `X-API-Key` 头
+- 收到 401 时清空 Key 并回到登录页
+
+> 这只是演示方案：Key 在浏览器里可被读到。正式对外时建议加 `POST /api/v1/auth/login`
+> 换短期 JWT 并用 HttpOnly Cookie 承载，前端代码不再持有密钥。
+
+### 功能
+
+| 区块 | 说明 |
+| --- | --- |
+| 顶栏 | 时间范围（15 分钟 / 1 小时 / 6 小时 / 24 小时 / 7 天）、自动刷新（关闭 / 10 / 30 / 60 秒）、手动刷新、退出 |
+| KPI 卡片 | CPU、内存（已用/总量）、磁盘（已用/总量）、网络上下行速率 |
+| 三张趋势图 | CPU+内存、网络吞吐（KB/s）、磁盘使用率，带缩放条（dataZoom） |
+| Top 进程表 | 默认按 CPU 排序，可切内存/内存占比，最多 20 行 |
+
+时间跨度到聚合间隔的换算在 `src/utils/interval.ts`：按「跨度 ÷ 400 点」挑一个间隔，
+后端还会再做一次兜底放大。
 
 ## 数据模型
 
