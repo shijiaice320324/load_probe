@@ -50,12 +50,17 @@ scripts\run.cmd -Interval 10
 | 停止数据库 | `scripts\pg-stop.cmd` | |
 | 数据库状态 | `scripts\pg-status.cmd` | |
 | 启动后端 | `scripts\run.cmd` | 可加 `-Interval 10` 临时改采集周期 |
+| **重建后端** | `scripts\rebuild-backend.cmd` | 停旧进程 → `mvn clean package`（含单测）→ 重启；加 `-Online` 强制联网构建 |
 | 启动前端 | `scripts\web-dev.cmd` | 浏览器开 http://127.0.0.1:5173 |
 | **停止前后端** | `scripts\stop-app.cmd` | 按端口 8080/5173 结束进程 |
 | 构建前端 | `scripts\web-build.cmd` | 产物在 `web/dist` |
 
 前端/后端在独立窗口跑时，也可以直接在那个窗口按 `Ctrl+C` 停止。
 `stop-app.cmd` 额外接受端口参数：`scripts\stop-app.cmd -Ports 8080`。
+
+> **为什么需要 `rebuild-backend.cmd`**：Windows 会锁住正在运行的 jar，
+> 直接 `mvn clean` 会报「另一个程序正在使用此文件」。这个脚本先按端口停掉旧进程，再构建、再启动，
+> 并自动做一次健康检查。改完代码后用它一条命令即可。
 
 ## 配置
 

@@ -1,4 +1,4 @@
-﻿﻿# 启动本机便携版 PostgreSQL（脱离当前终端独立常驻）
+﻿# 启动本机便携版 PostgreSQL（脱离当前终端独立常驻）
 $pgbin = 'D:\pg\pgsql\bin'
 $data = 'D:\pgdata'
 $logFile = 'D:\pg\log\postgres.log'

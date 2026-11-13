@@ -1,4 +1,4 @@
-﻿﻿# 在当前 PowerShell 会话中启用项目自带的便携 JDK 21 与 Maven
+﻿# 在当前 PowerShell 会话中启用项目自带的便携 JDK 21 与 Maven
 # 用法（注意前面有一个点和一个空格，表示 dot-source）：
 #     . .\scripts\dev-env.ps1
 # 之后即可直接使用 java / javac / mvn。
