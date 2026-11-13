@@ -15,9 +15,7 @@ public final class IntervalParser {
         String value = raw.trim().toLowerCase(Locale.ROOT);
         char unit = value.charAt(value.length() - 1);
         if (Character.isDigit(unit)) {
-            int seconds = Integer.parseInt(value);
-            check(seconds);
-            return seconds;
+            return validate(Long.parseLong(value), raw);
         }
         long amount = Long.parseLong(value.substring(0, value.length() - 1));
         long seconds = switch (unit) {
@@ -27,13 +25,20 @@ public final class IntervalParser {
             case 'd' -> amount * 86400;
             default -> throw new IllegalArgumentException("不支持的 interval 单位: " + raw + "（可用 s/m/h/d）");
         };
-        check((int) seconds);
-        return (int) seconds;
+        return validate(seconds, raw);
     }
 
-    private static void check(int seconds) {
+    /**
+     * 校验并转换。注意必须在 long 上判断上限，不能先 (int) 强转再校验——
+     * 那样 999999999d 这类大值会溢出成看似合法的秒数。
+     */
+    private static int validate(long seconds, String raw) {
         if (seconds < 1) {
             throw new IllegalArgumentException("interval 至少为 1 秒");
         }
+        if (seconds > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("interval 过大: " + raw + "（最大 " + Integer.MAX_VALUE + " 秒）");
+        }
+        return (int) seconds;
     }
 }
