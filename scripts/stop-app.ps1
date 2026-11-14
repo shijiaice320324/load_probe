@@ -1,5 +1,5 @@
 ﻿param(
-    [int[]]$Ports = @(8080, 5173)
+    [int[]]$Ports = @(8443, 443, 5173)
 )
 
 foreach ($port in $Ports) {

@@ -11,6 +11,9 @@ logs/
 work/
 .tmp/
 
+# 证书与私钥（绝不入库）
+certs/
+
 # IDE
 .idea/
 *.iml
@@ -25,9 +28,8 @@ out/
 Thumbs.db
 .DS_Store
 
-# 本地工具链（便携 JDK/Maven）
+# 本地工具链（便携 JDK/Maven/Node、npm 缓存）
 .tools/
 
-# ���ؽ�ͼ�����ʽ��ͼ�� docs/��
+# 本地截图产物（正式截图放 docs/）
 shots/
-

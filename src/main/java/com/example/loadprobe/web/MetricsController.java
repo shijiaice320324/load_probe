@@ -1,6 +1,7 @@
 package com.example.loadprobe.web;
 
 import com.example.loadprobe.config.LoadProbeProperties;
+import com.example.loadprobe.config.TlsInfo;
 import com.example.loadprobe.repository.MetricsRepository;
 import com.example.loadprobe.repository.MetricsRepository.ProcessRow;
 import com.example.loadprobe.repository.MetricsRepository.SystemBucket;
@@ -24,10 +25,12 @@ public class MetricsController {
     private static final Logger log = LoggerFactory.getLogger(MetricsController.class);
     private final MetricsRepository repository;
     private final LoadProbeProperties properties;
+    private final TlsInfo tlsInfo;
 
-    public MetricsController(MetricsRepository repository, LoadProbeProperties properties) {
+    public MetricsController(MetricsRepository repository, LoadProbeProperties properties, TlsInfo tlsInfo) {
         this.repository = repository;
         this.properties = properties;
+        this.tlsInfo = tlsInfo;
     }
 
     /** 系统级指标时间序列，支持任意时间跨度并按 interval 聚合。 */
@@ -80,11 +83,13 @@ public class MetricsController {
                 processes);
     }
 
-    /** 健康检查 + 当前配置摘要。 */
+    /** 健康检查 + 当前配置摘要（含 TLS 证书到期信息）。 */
     @GetMapping("/health")
     public Health health() {
         return new Health("UP", properties.getHost(), properties.getIntervalSeconds(),
-                properties.getTopProcessCount(), properties.getRetentionDays(), Instant.now());
+                properties.getTopProcessCount(), properties.getRetentionDays(), Instant.now(),
+                new TlsView(tlsInfo.isEnabled(), tlsInfo.getSubject(), tlsInfo.getNotAfter(),
+                        tlsInfo.getDaysRemaining()));
     }
 
     private Window resolveWindow(String fromRaw, String toRaw) {
@@ -154,6 +159,10 @@ public class MetricsController {
     }
 
     public record Health(String status, String host, int intervalSeconds, int topProcessCount,
-                         int retentionDays, Instant now) {
+                         int retentionDays, Instant now, TlsView tls) {
+    }
+
+    /** TLS 证书信息，便于外部监控到期时间。 */
+    public record TlsView(boolean enabled, String subject, Instant notAfter, long daysRemaining) {
     }
 }

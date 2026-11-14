@@ -52,11 +52,47 @@ scripts\run.cmd -Interval 10
 | 启动后端 | `scripts\run.cmd` | 可加 `-Interval 10` 临时改采集周期 |
 | **重建后端** | `scripts\rebuild-backend.cmd` | 停旧进程 → `mvn clean package`（含单测）→ 重启；加 `-Online` 强制联网构建 |
 | 启动前端 | `scripts\web-dev.cmd` | 浏览器开 http://127.0.0.1:5173 |
-| **停止前后端** | `scripts\stop-app.cmd` | 按端口 8080/5173 结束进程 |
+| 生成 HTTPS 证书 | `scripts\gen-cert.cmd` | 首次/换证书时执行，加 `-Force` 覆盖 |
+| **停止前后端** | `scripts\stop-app.cmd` | 按端口 8443/443/5173 结束进程 |
 | 构建前端 | `scripts\web-build.cmd` | 产物在 `web/dist` |
 
 前端/后端在独立窗口跑时，也可以直接在那个窗口按 `Ctrl+C` 停止。
-`stop-app.cmd` 额外接受端口参数：`scripts\stop-app.cmd -Ports 8080`。
+`stop-app.cmd` 额外接受端口参数：`scripts\stop-app.cmd -Ports 8443`。
+
+## HTTPS（自签证书）
+
+后端默认以 **HTTPS** 运行，只监听 `127.0.0.1:8443`（不再暴露 8080，也不再绑定 0.0.0.0）。
+
+### 首次生成证书
+
+```powershell
+scripts\gen-cert.cmd
+```
+
+会在 `certs\` 下生成 `loadprobe.p12`（PKCS12，含私钥）和 `loadprobe.crt`（PEM 公钥），
+并自动把口令写进 `config/local.env`（`certs/` 已在 `.gitignore` 中，私钥不会入库）。
+
+### 配置项（都可用环境变量覆盖）
+
+| 变量 | 默认 | 说明 |
+| --- | --- | --- |
+| `LOADPROBE_TLS_ENABLED` | `true` | 设为 `false` 立即回退到 HTTP |
+| `LOADPROBE_TLS_PORT` | `8443` | 启动时若 8443 被占用会自动改用 443 |
+| `LOADPROBE_TLS_KEYSTORE` | `certs/loadprobe.p12` | 证书库路径 |
+| `LOADPROBE_TLS_KEYSTORE_PASSWORD` | — | 证书库口令 |
+| `LOADPROBE_TLS_KEY_ALIAS` | `loadprobe` | 别名 |
+
+### 到期与轮换
+
+- 启动日志会打印证书 `subject`、到期时间和剩余天数；剩余 < 30 天打 WARN
+- `GET /api/v1/health` 返回 `tls.notAfter` 和 `tls.daysRemaining`，可接监控告警
+- 换证书：`scripts\gen-cert.cmd -Force` → `scripts\rebuild-backend.cmd` → 浏览器重新信任
+- 证书过期后应用会启动失败并给出明确提示，不会静默降级
+
+### 浏览器信任
+
+自签证书首次访问 https://127.0.0.1:8443 会提示「不安全」，点「高级 → 继续前往」即可；
+想彻底消除告警，把 `certs\loadprobe.crt` 导入「受信任的根证书颁发机构」。
 
 > **为什么需要 `rebuild-backend.cmd`**：Windows 会锁住正在运行的 jar，
 > 直接 `mvn clean` 会报「另一个程序正在使用此文件」。这个脚本先按端口停掉旧进程，再构建、再启动，
@@ -96,7 +132,7 @@ GET /api/v1/metrics/system?from=<ISO>&to=<ISO>&interval=<30s|1m|5m|1h|1d>
 
 ```bash
 curl -H "X-API-Key: $KEY" \
-  "http://127.0.0.1:8080/api/v1/metrics/system?from=2026-11-12T03:00:00Z&to=2026-11-12T05:00:00Z&interval=1m"
+  "https://127.0.0.1:8443/api/v1/metrics/system?from=2026-11-12T03:00:00Z&to=2026-11-12T05:00:00Z&interval=1m"
 ```
 
 ### 2. 进程指标（原始行，时间倒序）
@@ -118,7 +154,7 @@ GET /api/v1/health
 ```
 
 返回状态、主机名、当前采集间隔、Top-N、保留天数。浏览器可直接打开
-`http://127.0.0.1:8080/api/v1/health` 验证服务是否在线。
+`https://127.0.0.1:8443/api/v1/health` 验证服务是否在线。
 
 ## 前端看板（web/）
 
@@ -140,7 +176,7 @@ scripts\web-dev.cmd
 
 构建静态产物：`scripts\web-build.cmd`（输出 `web/dist`）。
 
-开发时 Vite 把 `/api` 代理到 `http://127.0.0.1:8080`，所以不存在跨域；将来把 `web/dist`
+开发时 Vite 把 `/api` 代理到 `https://127.0.0.1:8443`（`secure:false` 以接受自签证书），所以不存在跨域；将来把 `web/dist`
 交给 Nginx 或直接放进后端 `static/`，同样是同源部署。
 
 ### 鉴权（方案 A）
@@ -203,7 +239,9 @@ DEBUG 级别会额外打印 Top 3 进程明细（`com.example.loadprobe` 默认 
 
 | 现象 | 原因与处理 |
 | --- | --- |
-| 前端控制台/终端刷 `connect ECONNREFUSED 127.0.0.1:8080` | 后端没在运行。另开窗口执行 `scripts\run.cmd` 即可，前端不必重启（代理是逐请求转发的，后端起来就好） |
+| 前端控制台/终端刷 `connect ECONNREFUSED` / `proxy error` | 后端没在运行。另开窗口执行 `scripts\run.cmd` 即可，前端不必重启（代理是逐请求转发的，后端起来就好） |
+| 浏览器提示证书不受信任 | 自签证书的正常现象；点「高级 → 继续前往」，或导入 `certs\loadprobe.crt` |
+| curl 报证书错误 | 自签证书需要加 `-k`：`curl -k https://127.0.0.1:8443/api/v1/health` |
 | 浏览器打开数据接口返回 `{"error":"unauthorized"...}` | 该接口需要 `X-API-Key` 请求头；只有 `/api/v1/health` 免鉴权。用前端页面或带 header 的 curl |
 | 运行 `.ps1` 提示「因为在此系统上禁止运行脚本」 | 用对应的 `.cmd` 入口，或执行一次 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` |
 | 端口 8080 / 5173 被占用 | `scripts\stop-app.cmd` 按端口结束；前端若被占用 Vite 会自动换到 5174 |

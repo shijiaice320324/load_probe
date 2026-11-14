@@ -21,17 +21,27 @@ if (-not (Test-Path (Join-Path $web 'node_modules'))) {
 
 # 启动前先探一下后端，避免页面起来后满屏 connect ECONNREFUSED
 $backendOk = $false
+$tlsPort = if ($env:LOADPROBE_TLS_PORT) { $env:LOADPROBE_TLS_PORT } else { '8443' }
+$tlsEnabled = ($env:LOADPROBE_TLS_ENABLED -ne 'false')
+$probeUrl = if ($tlsEnabled) { "https://127.0.0.1:$tlsPort/api/v1/health" } else { 'http://127.0.0.1:8080/api/v1/health' }
 try {
-    $probe = Invoke-WebRequest -Uri 'http://127.0.0.1:8080/api/v1/health' -TimeoutSec 3 -UseBasicParsing -ErrorAction Stop
-    $backendOk = $true
-    Write-Host "后端在线（HTTP $($probe.StatusCode)）"
+    if ($tlsEnabled) {
+        # 自签证书，用 curl -k 忽略校验
+        curl.exe -k -s -o NUL -m 3 $probeUrl 2>$null
+        $backendOk = ($LASTEXITCODE -eq 0)
+    } else {
+        $probe = Invoke-WebRequest -Uri $probeUrl -TimeoutSec 3 -UseBasicParsing -ErrorAction Stop
+        $backendOk = $true
+    }
+    if ($backendOk) { Write-Host "后端在线（$probeUrl）" }
 } catch {
-    Write-Host ''
-    Write-Warning '后端 127.0.0.1:8080 未响应！页面上的接口会报 connect ECONNREFUSED。'
-    Write-Warning '请另开一个终端窗口，在项目根目录执行：scripts\run.cmd'
-    Write-Host ''
+    $backendOk = $false
 }
 if (-not $backendOk) {
+    Write-Host ''
+    Write-Warning "后端 $probeUrl 未响应！页面上的接口会报代理错误。"
+    Write-Warning '请另开一个终端窗口，在项目根目录执行：scripts\run.cmd'
+    Write-Host ''
     Write-Host '仍要继续启动前端？3 秒后继续（Ctrl+C 可取消）…'
     Start-Sleep -Seconds 3
 }

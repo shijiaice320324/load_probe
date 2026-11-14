@@ -8,7 +8,9 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:8080',
+        // 后端已启用 HTTPS（自签证书），secure:false 只影响开发代理
+        target: 'https://127.0.0.1:8443',
+        secure: false,
         changeOrigin: false
       }
     }

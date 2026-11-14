@@ -39,6 +39,46 @@ if (-not $env:LOADPROBE_LOG_FILE) {
     $env:LOADPROBE_LOG_FILE = Join-Path $root 'logs\load-probe.log'
 }
 
+# ---------- HTTPS 相关检查 ----------
+$tlsEnabled = ($env:LOADPROBE_TLS_ENABLED -eq 'true')
+if ($tlsEnabled) {
+    $store = $env:LOADPROBE_TLS_KEYSTORE
+    if (-not $store) { $store = 'certs/loadprobe.p12' }
+    $storePath = if ([System.IO.Path]::IsPathRooted($store)) { $store } else { Join-Path $root $store }
+    if (-not (Test-Path $storePath)) {
+        Write-Error "未找到证书库 $storePath，请先执行 scripts\gen-cert.cmd 生成自签证书"
+        exit 1
+    }
+
+    # 端口规则：显式配置优先；否则 8443 空闲用 8443，被占用则退到 443
+    function Test-PortFree([int]$port) {
+        $listener = $null
+        try {
+            $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $port)
+            $listener.Start()
+            return $true
+        } catch {
+            return $false
+        } finally {
+            if ($listener) { $listener.Stop() }
+        }
+    }
+
+    if (-not $env:LOADPROBE_TLS_PORT) {
+        if (Test-PortFree 8443) {
+            $env:LOADPROBE_TLS_PORT = '8443'
+        } elseif (Test-PortFree 443) {
+            $env:LOADPROBE_TLS_PORT = '443'
+        } else {
+            Write-Error '8443 与 443 均被占用，无法启动 HTTPS 服务'
+            exit 1
+        }
+    }
+    Write-Host "HTTPS 已启用，访问地址: https://127.0.0.1:$($env:LOADPROBE_TLS_PORT)"
+} else {
+    Write-Host 'HTTPS 未启用（LOADPROBE_TLS_ENABLED=false），以 HTTP 方式启动'
+}
+
 $jar = Join-Path $root 'target\load-probe.jar'
 if (-not (Test-Path $jar)) {
     Write-Error "找不到 $jar，请先执行 mvn clean package"

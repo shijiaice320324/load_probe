@@ -1,6 +1,16 @@
 server:
-  port: ${LOADPROBE_PORT:8080}
+  # HTTPS 端口：优先 8443，被占用时由 run.ps1 自动切到 443
+  port: ${LOADPROBE_TLS_PORT:8443}
+  # 只监听本机回环，避免暴露到局域网
+  address: ${LOADPROBE_BIND_ADDRESS:127.0.0.1}
   shutdown: graceful
+  ssl:
+    enabled: ${LOADPROBE_TLS_ENABLED:true}
+    key-store: ${LOADPROBE_TLS_KEYSTORE:certs/loadprobe.p12}
+    key-store-type: PKCS12
+    key-store-password: ${LOADPROBE_TLS_KEYSTORE_PASSWORD:}
+    key-alias: ${LOADPROBE_TLS_KEY_ALIAS:loadprobe}
+    enabled-protocols: TLSv1.2,TLSv1.3
   tomcat:
     # 本机用户临时目录权限异常，Tomcat 临时目录改到项目内
     basedir: ${LOADPROBE_TOMCAT_BASEDIR:./work/tomcat}
