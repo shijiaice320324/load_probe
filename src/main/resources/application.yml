@@ -23,8 +23,15 @@ spring:
     username: ${LOADPROBE_DB_USER:load_probe}
     password: ${LOADPROBE_DB_PASSWORD:}
     hikari:
-      maximum-pool-size: 5
-      connection-timeout: 5000
+      # 连接池大小：并发查询的上限。默认 10，可用 LOADPROBE_DB_POOL_SIZE 覆盖
+      maximum-pool-size: ${LOADPROBE_DB_POOL_SIZE:10}
+      # 常驻连接数（空闲时保留的连接）
+      minimum-idle: ${LOADPROBE_DB_POOL_MIN_IDLE:2}
+      # 从池里拿连接的最长等待时间（毫秒），超时抛异常
+      connection-timeout: ${LOADPROBE_DB_CONNECTION_TIMEOUT_MS:5000}
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      pool-name: loadprobe-pool
   flyway:
     enabled: true
     baseline-on-migrate: true

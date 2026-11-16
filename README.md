@@ -112,6 +112,9 @@ scripts\gen-cert.cmd
 | `LOADPROBE_INTERVAL_SECONDS` | 60 | 采集间隔，**最小 10**，小于 10 启动即失败并提示 |
 | `LOADPROBE_TOP_N` | 10 | 每轮采集进程数 |
 | `LOADPROBE_RETENTION_DAYS` | 7 | 数据保留天数 |
+| `LOADPROBE_DB_POOL_SIZE` | 10 | 数据库连接池上限（并发查询的关键参数，旧版是 5） |
+| `LOADPROBE_DB_POOL_MIN_IDLE` | 2 | 连接池常驻连接数 |
+| `LOADPROBE_DB_CONNECTION_TIMEOUT_MS` | 5000 | 取连接超时时间（毫秒） |
 | `LOADPROBE_LOG_FILE` | `logs/load-probe.log` | 日志文件 |
 
 ## 查询接口
