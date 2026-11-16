@@ -51,7 +51,8 @@ scripts\run.cmd -Interval 10
 | 数据库状态 | `scripts\pg-status.cmd` | |
 | 启动后端 | `scripts\run.cmd` | 可加 `-Interval 10` 临时改采集周期 |
 | **重建后端** | `scripts\rebuild-backend.cmd` | 停旧进程 → `mvn clean package`（含单测）→ 重启；加 `-Online` 强制联网构建 |
-| 启动前端 | `scripts\web-dev.cmd` | 浏览器开 http://127.0.0.1:5173 |
+| 启动前端 | `scripts\web-dev.cmd` | 仅开发用；浏览器开 http://127.0.0.1:5173 |
+| **生产模式打包** | `scripts\package-full.cmd` | 构建前端 → 打进 jar → 重启，之后只访问 https://127.0.0.1:8443 |
 | 生成 HTTPS 证书 | `scripts\gen-cert.cmd` | 首次/换证书时执行，加 `-Force` 覆盖 |
 | **停止前后端** | `scripts\stop-app.cmd` | 按端口 8443/443/5173 结束进程 |
 | 构建前端 | `scripts\web-build.cmd` | 产物在 `web/dist` |
@@ -159,6 +160,25 @@ GET /api/v1/health
 ## 前端看板（web/）
 
 技术栈：Vue 3 + Vite + TypeScript + ECharts。
+
+### 生产模式（推荐日常使用）
+
+```powershell
+scripts\package-full.cmd
+```
+
+依次做三件事：`npm run build` → 把 `web/dist` 打进 jar（`maven-resources-plugin` 在 `prepare-package` 阶段复制到 `BOOT-INF/classes/static`）→ 停旧进程、重启后端。
+
+完成后**只需一个地址**：**https://127.0.0.1:8443**
+
+- 页面与接口同源，没有 CORS、没有代理、不需要 Vite、不需要 5173；
+- 页面静态资源不需要鉴权，数据接口仍然要 `X-API-Key`；
+- 自签证书首次访问点「高级 → 继续前往」即可。
+
+### 开发模式
+
+改前端代码时用热更新更快：先 `scripts\run.cmd`，再另开窗口 `scripts\web-dev.cmd`，
+浏览器打开 http://127.0.0.1:5173（Vite 把 `/api` 代理到 `https://127.0.0.1:8443`，`secure:false` 接受自签证书）。
 
 ![看板截图](docs/dashboard.png)
 

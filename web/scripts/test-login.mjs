@@ -9,10 +9,13 @@ const EDGE = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
 const browser = await puppeteer.launch({
   executablePath: EDGE,
   headless: true,
-  args: ['--no-sandbox', '--disable-gpu']
+  ignoreHTTPSErrors: true,
+  args: ['--no-sandbox', '--disable-gpu', '--ignore-certificate-errors']
 })
 const page = await browser.newPage()
 await page.setViewport({ width: 1440, height: 1200 })
+// 生产模式下页面走 HTTPS 自签证书，忽略证书错误才能自动化
+await page.setBypassCSP(false)
 
 await page.goto(url, { waitUntil: 'networkidle0', timeout: 60000 })
 await page.waitForSelector('input[type="password"]')
