@@ -68,3 +68,17 @@ logging:
       max-file-size: 10MB
       max-history: 7
       total-size-cap: 200MB
+
+# Actuator：暴露健康与指标端点（服务只监听 127.0.0.1，暂不需要额外鉴权）
+# 连接池指标示例：GET /actuator/metrics/hikaricp.connections.active
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: load-probe

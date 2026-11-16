@@ -1,5 +1,6 @@
 package com.example.loadprobe.web;
 
+import com.example.loadprobe.config.DbPoolInfo;
 import com.example.loadprobe.config.LoadProbeProperties;
 import com.example.loadprobe.config.TlsInfo;
 import com.example.loadprobe.repository.MetricsRepository;
@@ -28,11 +29,14 @@ public class MetricsController {
     private final MetricsRepository repository;
     private final LoadProbeProperties properties;
     private final TlsInfo tlsInfo;
+    private final DbPoolInfo dbPoolInfo;
 
-    public MetricsController(MetricsRepository repository, LoadProbeProperties properties, TlsInfo tlsInfo) {
+    public MetricsController(MetricsRepository repository, LoadProbeProperties properties,
+                             TlsInfo tlsInfo, DbPoolInfo dbPoolInfo) {
         this.repository = repository;
         this.properties = properties;
         this.tlsInfo = tlsInfo;
+        this.dbPoolInfo = dbPoolInfo;
     }
 
     /** 系统级指标时间序列，支持任意时间跨度并按 interval 聚合。 */
@@ -89,13 +93,15 @@ public class MetricsController {
                 processes);
     }
 
-    /** 健康检查 + 当前配置摘要（含 TLS 证书到期信息）。 */
+    /** 健康检查 + 当前配置摘要（含 TLS 证书与连接池状态）。 */
     @GetMapping("/health")
     public Health health() {
+        DbPoolInfo.Snapshot pool = dbPoolInfo.snapshot();
         return new Health("UP", properties.getHost(), properties.getIntervalSeconds(),
                 properties.getTopProcessCount(), properties.getRetentionDays(), Instant.now(),
                 new TlsView(tlsInfo.isEnabled(), tlsInfo.getSubject(), tlsInfo.getNotAfter(),
-                        tlsInfo.getDaysRemaining()));
+                        tlsInfo.getDaysRemaining()),
+                new DbPoolView(pool.active(), pool.idle(), pool.total(), pool.awaiting(), pool.maxPoolSize()));
     }
 
     private Window resolveWindow(String fromRaw, String toRaw) {
@@ -165,10 +171,22 @@ public class MetricsController {
     }
 
     public record Health(String status, String host, int intervalSeconds, int topProcessCount,
-                         int retentionDays, Instant now, TlsView tls) {
+                         int retentionDays, Instant now, TlsView tls, DbPoolView dbPool) {
     }
 
     /** TLS 证书信息，便于外部监控到期时间。 */
     public record TlsView(boolean enabled, String subject, Instant notAfter, long daysRemaining) {
+    }
+
+    /**
+     * 连接池状态。
+     *
+     * @param active         正在使用的连接
+     * @param idle           空闲连接
+     * @param total          active + idle
+     * @param awaitingThreads 等待连接的线程数，持续 &gt; 0 说明池子偏小
+     * @param maxPoolSize    池上限
+     */
+    public record DbPoolView(int active, int idle, int total, int awaitingThreads, int maxPoolSize) {
     }
 }

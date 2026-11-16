@@ -173,8 +173,41 @@ GET /api/v1/metrics/latest
 GET /api/v1/health
 ```
 
-返回状态、主机名、当前采集间隔、Top-N、保留天数。浏览器可直接打开
-`https://127.0.0.1:8443/api/v1/health` 验证服务是否在线。
+返回状态、主机名、采集间隔、Top-N、保留天数、TLS 证书信息，以及**连接池状态**：
+
+```json
+{
+  "status": "UP", "host": "HISUN", "intervalSeconds": 30,
+  "tls": { "enabled": true, "notAfter": "2029-02-16T03:25:35Z", "daysRemaining": 822 },
+  "dbPool": { "active": 0, "idle": 2, "total": 2, "awaitingThreads": 0, "maxPoolSize": 10 }
+}
+```
+
+| 字段 | 含义 |
+| --- | --- |
+| `active` | 正在被请求使用的连接数 |
+| `idle` | 空闲连接数 |
+| `total` | `active + idle` |
+| `awaitingThreads` | 等待连接的线程数，**持续 > 0 说明连接池偏小** |
+| `maxPoolSize` | 池上限（`LOADPROBE_DB_POOL_SIZE`） |
+
+压测时观察到的典型变化：空闲 `2` → 40 并发时 `total` 涨到 9、`active` 峰值 8、`awaitingThreads` 恒为 0
+（说明池子还有余量）。
+
+### 5. Actuator 指标（Spring Boot Actuator）
+
+服务只监听 `127.0.0.1`，这两个端点为方便本机排查，未额外加鉴权：
+
+| 端点 | 说明 |
+| --- | --- |
+| `GET /actuator/health` | 含 db / diskSpace / ssl 等组件的健康详情 |
+| `GET /actuator/metrics` | 可用指标列表（hikaricp / jvm / http.server.requests 等） |
+| `GET /actuator/metrics/hikaricp.connections.active` | 当前活跃连接数 |
+
+```bash
+curl -k https://127.0.0.1:8443/actuator/metrics/hikaricp.connections.active
+# {"name":"hikaricp.connections.active","measurements":[{"statistic":"VALUE","value":0.0}], ...}
+```
 
 ## 前端看板（web/）
 
