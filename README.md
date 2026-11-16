@@ -56,6 +56,7 @@ scripts\run.cmd -Interval 10
 | 生成 HTTPS 证书 | `scripts\gen-cert.cmd` | 首次/换证书时执行，加 `-Force` 覆盖 |
 | **停止前后端** | `scripts\stop-app.cmd` | 按端口 8443/443/5173 结束进程 |
 | 构建前端 | `scripts\web-build.cmd` | 产物在 `web/dist` |
+| 接口压测 | `scripts\bench-api.cmd` | 自带便携 Node，例：`scripts\bench-api.cmd https://127.0.0.1:8443 <API_KEY> /api/v1/metrics/latest 2000 20` |
 
 前端/后端在独立窗口跑时，也可以直接在那个窗口按 `Ctrl+C` 停止。
 `stop-app.cmd` 额外接受端口参数：`scripts\stop-app.cmd -Ports 8443`。
