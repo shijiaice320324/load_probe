@@ -23,6 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class MetricsController {
 
     private static final Logger log = LoggerFactory.getLogger(MetricsController.class);
+    /** 进程查询单次最多返回的行数，防止一次拉出过大的 JSON。 */
+    static final int MAX_PROCESS_LIMIT = 1000;
     private final MetricsRepository repository;
     private final LoadProbeProperties properties;
     private final TlsInfo tlsInfo;
@@ -56,11 +58,15 @@ public class MetricsController {
             @RequestParam(required = false) String from,
             @RequestParam(required = false) String to,
             @RequestParam(required = false, defaultValue = "200") int limit) {
-        if (limit < 1 || limit > 5000) {
-            throw new IllegalArgumentException("limit 取值范围 1..5000");
+        // 上限收紧到 1000：单行约 127 字节，1000 行约 120KB，避免一次拉出几 MB 的 JSON
+        if (limit < 1 || limit > MAX_PROCESS_LIMIT) {
+            throw new IllegalArgumentException("limit 取值范围 1.." + MAX_PROCESS_LIMIT);
         }
         Window window = resolveWindow(from, to);
         List<ProcessRow> rows = repository.queryProcesses(window.from(), window.to(), limit);
+        if (rows.size() >= limit) {
+            log.debug("进程查询命中 limit 上限 {}，如需更早数据请缩小时间窗或调小 limit", limit);
+        }
         log.debug("查询进程指标 from={} to={} limit={} rows={}", window.from(), window.to(), limit, rows.size());
         return new ProcessSeries(window.from(), window.to(), limit, rows.stream().map(ProcessSeries::toPoint).toList());
     }

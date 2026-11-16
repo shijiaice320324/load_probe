@@ -140,7 +140,22 @@ curl -H "X-API-Key: $KEY" \
 ### 2. 进程指标（原始行，时间倒序）
 
 ```
-GET /api/v1/metrics/processes?from=<ISO>&to=<ISO>&limit=<1..5000，默认 200>
+GET /api/v1/metrics/processes?from=<ISO>&to=<ISO>&limit=<1..1000，默认 200>
+```
+
+- `from` 默认 `to - 1h`，`to` 默认当前时间
+- `limit` 上限 **1000**（超出返回 400）。单行约 127 字节，1000 行约 120KB
+- **约定：进程查询必须按时间窗查**。返回的是原始行（每轮 Top-N 条），不做聚合，
+  所以数据量由「时间窗 ÷ 采集间隔 × Top-N」决定：
+  1 小时（30 秒采集）= 约 1200 行，7 天 = 约 20 万行。
+  想查更早的数据，请**缩小时间窗**或分批查，不要靠调大 `limit` 拉全量——
+  那样一次响应会有几百 KB 到几 MB，浏览器渲染也会卡。
+- 需要长时间段趋势时，用 `/metrics/system`（服务端按桶聚合），而不是进程接口
+
+```bash
+# 推荐：小时间窗 + 明确 limit
+curl -H "X-API-Key: $KEY" \
+  "https://127.0.0.1:8443/api/v1/metrics/processes?from=2026-11-16T02:00:00Z&to=2026-11-16T02:30:00Z&limit=200"
 ```
 
 ### 3. 最近一次采集
