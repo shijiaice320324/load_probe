@@ -1,5 +1,5 @@
-import { apiGet } from './client'
-import type { AlertList, Health, Latest, ProcessSeries, SystemSeries } from './types'
+import { apiGet, apiPut } from './client'
+import type { AlertList, AlertRule, Health, Latest, ProcessSeries, SystemSeries } from './types'
 
 export function fetchHealth(): Promise<Health> {
   return apiGet<Health>('/api/v1/health')
@@ -31,4 +31,15 @@ export function fetchAlerts(params: {
     status: params.status,
     limit: params.limit ?? 200
   })
+}
+
+export function fetchAlertRules(): Promise<AlertRule[]> {
+  return apiGet<AlertRule[]>('/api/v1/alert-rules')
+}
+
+export function updateAlertRule(
+  id: string,
+  payload: { threshold: number; consecutiveSamples: number; enabled: boolean }
+): Promise<AlertRule> {
+  return apiPut<AlertRule>(`/api/v1/alert-rules/${id}`, payload)
 }

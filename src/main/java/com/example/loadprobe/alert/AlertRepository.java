@@ -26,7 +26,7 @@ public class AlertRepository {
                         message, started_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, new String[]{"id"});
-            ps.setString(1, event.rule().getId());
+            ps.setString(1, event.rule().id());
             ps.setString(2, event.metric().name());
             ps.setString(3, event.level().name());
             ps.setString(4, event.status().name());

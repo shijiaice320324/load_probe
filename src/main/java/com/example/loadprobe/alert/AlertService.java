@@ -99,7 +99,7 @@ public class AlertService {
     private void dispatch(List<AlertEvent> events) {
         for (AlertEvent event : events) {
             if (event.status() == AlertStatus.RESOLVED) {
-                repository.resolve(event.rule().getId(), event.at());
+                repository.resolve(event.rule().id(), event.at());
                 notifyAsync(event, -1);
                 continue;
             }
@@ -107,7 +107,7 @@ public class AlertService {
             if (event.notifyEnabled()) {
                 notifyAsync(event, alertId);
             } else {
-                log.info("告警处于冷却期，仅记录不通知 rule={} alertId={}", event.rule().getId(), alertId);
+                log.info("告警处于冷却期，仅记录不通知 rule={} alertId={}", event.rule().id(), alertId);
             }
         }
     }

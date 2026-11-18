@@ -30,6 +30,19 @@ export async function apiGet<T>(
   path: string,
   params?: Record<string, string | number | undefined>
 ): Promise<T> {
+  return request<T>('GET', path, params)
+}
+
+export async function apiPut<T>(path: string, body: unknown): Promise<T> {
+  return request<T>('PUT', path, undefined, body)
+}
+
+async function request<T>(
+  method: 'GET' | 'PUT',
+  path: string,
+  params?: Record<string, string | number | undefined>,
+  body?: unknown
+): Promise<T> {
   const url = new URL(path, window.location.origin)
   if (params) {
     for (const [key, value] of Object.entries(params)) {
@@ -42,7 +55,12 @@ export async function apiGet<T>(
   let response: Response
   try {
     response = await fetch(url.toString(), {
-      headers: { 'X-API-Key': getApiKey() }
+      method,
+      headers: {
+        'X-API-Key': getApiKey(),
+        ...(body === undefined ? {} : { 'Content-Type': 'application/json' })
+      },
+      body: body === undefined ? undefined : JSON.stringify(body)
     })
   } catch (e) {
     throw new ApiError(0, `无法连接后端：${(e as Error).message}`)
@@ -57,9 +75,9 @@ export async function apiGet<T>(
   if (!response.ok) {
     let message = `请求失败（HTTP ${response.status}）`
     try {
-      const body = (await response.json()) as { message?: string }
-      if (body?.message) {
-        message = body.message
+      const payload = (await response.json()) as { message?: string }
+      if (payload?.message) {
+        message = payload.message
       }
     } catch {
       /* 响应体不是 JSON 时保留默认提示 */

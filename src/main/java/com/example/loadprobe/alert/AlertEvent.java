@@ -8,7 +8,7 @@ import java.time.Instant;
  * 注意：记录组件不能叫 notify（与 Object.notify() 冲突）。
  */
 public record AlertEvent(
-        AlertProperties.Rule rule,
+        AlertRuleDef rule,
         AlertStatus status,
         AlertLevel level,
         AlertMetric metric,

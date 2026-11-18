@@ -18,7 +18,7 @@ public class LoggingAlertNotifier implements AlertNotifier {
     @Override
     public void send(AlertEvent event, long alertId) {
         log.info("[ALERT#{}] {} {} {} {}={} threshold={} at={}",
-                alertId, event.status(), event.level(), event.rule().getName(),
+                alertId, event.status(), event.level(), event.rule().name(),
                 event.metric(), event.value(), event.threshold(), event.at());
     }
 }

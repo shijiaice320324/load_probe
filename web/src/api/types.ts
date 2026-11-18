@@ -82,3 +82,14 @@ export interface AlertList {
   limit: number
   items: AlertItem[]
 }
+
+export interface AlertRule {
+  id: string
+  name: string
+  metric: 'CPU' | 'MEM' | 'DISK' | 'COLLECT_AGE_SECONDS'
+  threshold: number
+  consecutiveSamples: number
+  level: 'WARNING' | 'CRITICAL'
+  message: string
+  enabled: boolean
+}

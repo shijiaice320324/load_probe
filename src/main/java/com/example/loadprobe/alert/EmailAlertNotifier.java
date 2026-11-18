@@ -54,7 +54,7 @@ public class EmailAlertNotifier implements AlertNotifier {
         String statusText = event.status() == AlertStatus.FIRING ? "触发" : "恢复";
         String subject = "[load_probe] %s %s：%s（%.1f%%，阈值 %.1f%%）".formatted(
                 event.status() == AlertStatus.FIRING ? "🔴" : "🟢",
-                statusText, event.rule().getName(), event.value(), event.threshold());
+                statusText, event.rule().name(), event.value(), event.threshold());
 
         String body = """
                 load_probe 告警通知
@@ -72,8 +72,8 @@ public class EmailAlertNotifier implements AlertNotifier {
                 """.formatted(
                 statusText,
                 event.level(),
-                event.rule().getName(),
-                event.rule().getId(),
+                event.rule().name(),
+                event.rule().id(),
                 event.metric(),
                 event.value(),
                 event.threshold(),
@@ -88,7 +88,22 @@ public class EmailAlertNotifier implements AlertNotifier {
         helper.setTo(properties.getRecipients().toArray(new String[0]));
         helper.setSubject(subject);
         helper.setText(body, false);
-        sender.send(message);
-        log.info("告警邮件已发送 alertId={} to={}", alertId, List.copyOf(properties.getRecipients()));
+
+        // 新浪 SMTP 偶尔握手/读取超时，简单重试一次
+        int attempts = 2;
+        for (int attempt = 1; attempt <= attempts; attempt++) {
+            try {
+                sender.send(message);
+                log.info("告警邮件已发送 alertId={} to={}（第 {} 次尝试）",
+                        alertId, List.copyOf(properties.getRecipients()), attempt);
+                return;
+            } catch (Exception e) {
+                if (attempt == attempts) {
+                    throw e;
+                }
+                log.warn("第 {} 次发送告警邮件失败，2 秒后重试: {}", attempt, e.toString());
+                Thread.sleep(2000);
+            }
+        }
     }
 }

@@ -5,6 +5,7 @@ import KpiCards from './components/KpiCards.vue'
 import LineChart from './components/LineChart.vue'
 import ProcessTable from './components/ProcessTable.vue'
 import AlertsPanel from './components/AlertsPanel.vue'
+import AlertRulesPanel from './components/AlertRulesPanel.vue'
 import { UNAUTHORIZED_EVENT, clearApiKey, getApiKey } from './api/client'
 import { fetchHealth, fetchLatest, fetchSystemSeries } from './api/metrics'
 import type { Health, Latest, ProcessPoint, SystemPoint } from './api/types'
@@ -207,6 +208,8 @@ onBeforeUnmount(() => {
     />
 
     <ProcessTable :processes="processes" />
+
+    <AlertRulesPanel :refresh-key="alertRefreshKey" />
 
     <AlertsPanel :refresh-key="alertRefreshKey" />
   </div>

@@ -235,6 +235,24 @@ curl -k https://127.0.0.1:8443/actuator/metrics/hikaricp.connections.active
 - 恢复通知：指标回落后自动发一封「已恢复」
 - 服务重启后，上次遗留的「触发中」记录会自动关闭并标注原因，避免永远显示 firing
 
+### 在线修改阈值
+
+规则存在 `alert_rules` 表里，**前端看板可直接改**（「告警规则」面板），保存即生效、无需重启：
+
+| 接口 | 说明 |
+| --- | --- |
+| `GET /api/v1/alert-rules` | 列出全部规则 |
+| `PUT /api/v1/alert-rules/{id}` | 修改 `threshold` / `consecutiveSamples` / `enabled` |
+
+```bash
+curl -k -X PUT -H "X-API-Key: $KEY" -H "Content-Type: application/json" \
+  -d '{"threshold": 85, "consecutiveSamples": 2}' \
+  https://127.0.0.1:8443/api/v1/alert-rules/cpu-high
+```
+
+校验：百分比阈值 0～100，断档阈值 5～86400 秒，连续次数 1～100，超出返回 400。
+首次启动会把 `application.yml` 里的规则补进表里；**之后以数据库为准**，改 yml 不再覆盖已有规则。
+
 ### 邮件配置（新浪邮箱为例）
 
 1. 登录邮箱 → 设置 → 客户端 POP/IMAP/SMTP → 开启 SMTP 服务 → 生成**授权码**

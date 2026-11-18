@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * 规则判定：连续 N 个采样点超过阈值才触发，回落后自动恢复。
- * 状态保存在内存中，进程重启会重置（会重新经历一次连续计数）。
+ * 规则来自 {@link AlertRuleProvider}（数据库，可由前端修改），状态保存在内存中。
  */
 @Component
 public class AlertEvaluator {
@@ -20,10 +20,12 @@ public class AlertEvaluator {
     private static final Logger log = LoggerFactory.getLogger(AlertEvaluator.class);
 
     private final AlertProperties properties;
+    private final AlertRuleProvider ruleProvider;
     private final Map<String, RuleState> states = new ConcurrentHashMap<>();
 
-    public AlertEvaluator(AlertProperties properties) {
+    public AlertEvaluator(AlertProperties properties, AlertRuleProvider ruleProvider) {
         this.properties = properties;
+        this.ruleProvider = ruleProvider;
     }
 
     public List<AlertEvent> evaluate(MetricsSnapshot snapshot, Instant at) {
@@ -31,12 +33,15 @@ public class AlertEvaluator {
         if (!properties.isEnabled()) {
             return events;
         }
-        for (AlertProperties.Rule rule : properties.getRules()) {
-            double value = snapshot.valueOf(rule.getMetric());
+        for (AlertRuleDef rule : ruleProvider.rules()) {
+            if (!rule.enabled()) {
+                continue;
+            }
+            double value = snapshot.valueOf(rule.metric());
             if (Double.isNaN(value)) {
                 continue;
             }
-            RuleState state = states.computeIfAbsent(rule.getId(), key -> new RuleState());
+            RuleState state = states.computeIfAbsent(rule.id(), key -> new RuleState());
             AlertEvent event = evaluateRule(rule, value, at, state);
             if (event != null) {
                 events.add(event);
@@ -45,11 +50,11 @@ public class AlertEvaluator {
         return events;
     }
 
-    private AlertEvent evaluateRule(AlertProperties.Rule rule, double value, Instant at, RuleState state) {
+    private AlertEvent evaluateRule(AlertRuleDef rule, double value, Instant at, RuleState state) {
         synchronized (state) {
-            if (value >= rule.getThreshold()) {
+            if (value >= rule.threshold()) {
                 state.consecutive++;
-                if (!state.firing && state.consecutive >= rule.getConsecutiveSamples()) {
+                if (!state.firing && state.consecutive >= rule.consecutiveSamples()) {
                     state.firing = true;
                     state.since = at;
                     boolean cooled = state.lastNotified == null
@@ -58,9 +63,9 @@ public class AlertEvaluator {
                         state.lastNotified = at;
                     }
                     log.info("告警触发 rule={} value={} threshold={} level={} notify={}",
-                            rule.getId(), value, rule.getThreshold(), rule.getLevel(), cooled);
-                    return new AlertEvent(rule, AlertStatus.FIRING, rule.getLevel(), rule.getMetric(),
-                            value, rule.getThreshold(), at, cooled, describe(rule, value));
+                            rule.id(), value, rule.threshold(), rule.level(), cooled);
+                    return new AlertEvent(rule, AlertStatus.FIRING, rule.level(), rule.metric(),
+                            value, rule.threshold(), at, cooled, describe(rule, value));
                 }
                 return null;
             }
@@ -69,21 +74,21 @@ public class AlertEvaluator {
             if (state.firing) {
                 state.firing = false;
                 state.since = null;
-                log.info("告警恢复 rule={} value={} threshold={}", rule.getId(), value, rule.getThreshold());
-                return new AlertEvent(rule, AlertStatus.RESOLVED, rule.getLevel(), rule.getMetric(),
-                        value, rule.getThreshold(), at, true, describe(rule, value));
+                log.info("告警恢复 rule={} value={} threshold={}", rule.id(), value, rule.threshold());
+                return new AlertEvent(rule, AlertStatus.RESOLVED, rule.level(), rule.metric(),
+                        value, rule.threshold(), at, true, describe(rule, value));
             }
             return null;
         }
     }
 
-    private String describe(AlertProperties.Rule rule, double value) {
-        String base = rule.getMessage() == null || rule.getMessage().isBlank() ? rule.getName() : rule.getMessage();
-        return "%s（当前 %.2f，阈值 %.2f）".formatted(base, value, rule.getThreshold());
+    private String describe(AlertRuleDef rule, double value) {
+        String base = rule.message() == null || rule.message().isBlank() ? rule.name() : rule.message();
+        return "%s（当前 %.2f，阈值 %.2f）".formatted(base, value, rule.threshold());
     }
 
-    /** 供测试重置内部状态。 */
-    void reset() {
+    /** 规则被前端修改后，清空内存状态，让新阈值立即重新计数。 */
+    public void resetState() {
         states.clear();
     }
 
