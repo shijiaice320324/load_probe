@@ -59,3 +59,26 @@ export interface Health {
   retentionDays: number
   now: string
 }
+
+export interface AlertItem {
+  id: number
+  ruleId: string
+  metric: string
+  level: 'WARNING' | 'CRITICAL'
+  status: 'FIRING' | 'RESOLVED'
+  host: string
+  value: number
+  threshold: number
+  message: string
+  startedAt: string
+  resolvedAt: string | null
+  notifiedAt: string | null
+  notifyChannel: string | null
+}
+
+export interface AlertList {
+  from: string
+  to: string
+  limit: number
+  items: AlertItem[]
+}

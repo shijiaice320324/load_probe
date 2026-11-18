@@ -115,6 +115,14 @@ scripts\gen-cert.cmd
 | `LOADPROBE_DB_POOL_SIZE` | 10 | 数据库连接池上限（并发查询的关键参数，旧版是 5） |
 | `LOADPROBE_DB_POOL_MIN_IDLE` | 2 | 连接池常驻连接数 |
 | `LOADPROBE_DB_CONNECTION_TIMEOUT_MS` | 5000 | 取连接超时时间（毫秒） |
+| `LOADPROBE_MAIL_USERNAME` | 空 | 发件邮箱（如 `shijiaice@sina.com`） |
+| `LOADPROBE_MAIL_PASSWORD` | 空 | 邮箱 **SMTP 授权码**（不是登录密码） |
+| `LOADPROBE_ALERT_EMAIL` | `shijiaice@sina.com` | 告警收件人 |
+| `LOADPROBE_ALERTS_ENABLED` | true | 告警总开关 |
+| `LOADPROBE_ALERT_CPU_THRESHOLD` | 90 | CPU 告警阈值（%） |
+| `LOADPROBE_ALERT_MEM_THRESHOLD` | 90 | 内存告警阈值（%） |
+| `LOADPROBE_ALERT_DISK_THRESHOLD` | 90 | 磁盘告警阈值（%） |
+| `LOADPROBE_ALERT_STALE_SECONDS` | 180 | 采集断档阈值（秒） |
 | `LOADPROBE_LOG_FILE` | `logs/load-probe.log` | 日志文件 |
 
 ## 查询接口
@@ -208,6 +216,50 @@ GET /api/v1/health
 curl -k https://127.0.0.1:8443/actuator/metrics/hikaricp.connections.active
 # {"name":"hikaricp.connections.active","measurements":[{"statistic":"VALUE","value":0.0}], ...}
 ```
+
+## 告警
+
+采集完成后立即判定，规则命中 → 落库 → 异步邮件通知；恢复时再发一封恢复邮件。
+
+### 默认规则
+
+| 规则 | 指标 | 阈值 | 连续样本 | 级别 |
+| --- | --- | --- | --- | --- |
+| `cpu-high` | CPU % | 90 | 3 次（约 90 秒） | CRITICAL |
+| `mem-high` | 内存 % | 90 | 3 次 | CRITICAL |
+| `disk-high` | 磁盘 % | 90 | 1 次 | WARNING |
+| `collect-stale` | 距上次采集秒数 | 180 | 1 次 | CRITICAL |
+
+- 连续样本去抖：避免瞬时尖峰误报
+- 冷却期 15 分钟：同一规则重复触发不会反复轰炸邮箱
+- 恢复通知：指标回落后自动发一封「已恢复」
+- 服务重启后，上次遗留的「触发中」记录会自动关闭并标注原因，避免永远显示 firing
+
+### 邮件配置（新浪邮箱为例）
+
+1. 登录邮箱 → 设置 → 客户端 POP/IMAP/SMTP → 开启 SMTP 服务 → 生成**授权码**
+2. 写入 `config/local.env`：
+
+```
+LOADPROBE_MAIL_USERNAME=shijiaice@sina.com
+LOADPROBE_MAIL_PASSWORD=你的授权码
+LOADPROBE_ALERT_EMAIL=shijiaice@sina.com
+```
+
+3. 重启后端：`scripts\rebuild-backend.cmd`
+
+未配置授权码时，告警仍会落库并写日志（渠道记为 `log`），只是不发邮件。
+
+### 查询接口
+
+```
+GET /api/v1/alerts?from=<ISO>&to=<ISO>&level=CRITICAL|WARNING&status=FIRING|RESOLVED&limit=100
+```
+
+前端看板底部有「告警历史（近 7 天）」面板，支持按状态、级别筛选。
+
+> 已知局限：进程自己挂掉时无法发出告警（本机进程无法自报），断档规则只能覆盖“进程活着但采集失败/数据库故障”的情况。
+> 要覆盖「服务宕机 / 机器休眠」，需要外部探活（另一台机器定时请求 `/api/v1/health`）。
 
 ## 前端看板（web/）
 

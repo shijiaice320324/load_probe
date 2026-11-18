@@ -37,6 +37,22 @@ spring:
     baseline-on-migrate: true
   lifecycle:
     timeout-per-shutdown-phase: 10s
+  # 告警邮件：账号授权码放 config/local.env，不要写进仓库
+  mail:
+    host: ${LOADPROBE_MAIL_HOST:smtp.sina.com.cn}
+    port: ${LOADPROBE_MAIL_PORT:465}
+    username: ${LOADPROBE_MAIL_USERNAME:}
+    password: ${LOADPROBE_MAIL_PASSWORD:}
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
 
 loadprobe:
   # 采集间隔（秒）：默认 60，最小允许 10
@@ -56,6 +72,42 @@ loadprobe:
   max-points: ${LOADPROBE_MAX_POINTS:2000}
   # 机器标识，写入数据库的 host 字段
   host: ${LOADPROBE_HOST:${COMPUTERNAME:localhost}}
+
+  # 告警：阈值判定 + 连续样本去抖 + 冷却 + 恢复通知
+  alerts:
+    enabled: ${LOADPROBE_ALERTS_ENABLED:true}
+    cooldown-minutes: ${LOADPROBE_ALERT_COOLDOWN_MINUTES:15}
+    recipients:
+      - ${LOADPROBE_ALERT_EMAIL:shijiaice@sina.com}
+    rules:
+      - id: cpu-high
+        name: CPU 使用率过高
+        metric: CPU
+        threshold: ${LOADPROBE_ALERT_CPU_THRESHOLD:90}
+        consecutive-samples: 3
+        level: CRITICAL
+        message: CPU 使用率持续超过 90%
+      - id: mem-high
+        name: 内存使用率过高
+        metric: MEM
+        threshold: ${LOADPROBE_ALERT_MEM_THRESHOLD:90}
+        consecutive-samples: 3
+        level: CRITICAL
+        message: 内存使用率持续超过 90%
+      - id: disk-high
+        name: 磁盘使用率过高
+        metric: DISK
+        threshold: ${LOADPROBE_ALERT_DISK_THRESHOLD:90}
+        consecutive-samples: 1
+        level: WARNING
+        message: 磁盘使用率超过 90%
+      - id: collect-stale
+        name: 采集断档
+        metric: COLLECT_AGE_SECONDS
+        threshold: ${LOADPROBE_ALERT_STALE_SECONDS:180}
+        consecutive-samples: 1
+        level: CRITICAL
+        message: 超过 180 秒没有新的采集数据
 
 logging:
   file:

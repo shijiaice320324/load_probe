@@ -4,6 +4,7 @@ import LoginPanel from './components/LoginPanel.vue'
 import KpiCards from './components/KpiCards.vue'
 import LineChart from './components/LineChart.vue'
 import ProcessTable from './components/ProcessTable.vue'
+import AlertsPanel from './components/AlertsPanel.vue'
 import { UNAUTHORIZED_EVENT, clearApiKey, getApiKey } from './api/client'
 import { fetchHealth, fetchLatest, fetchSystemSeries } from './api/metrics'
 import type { Health, Latest, ProcessPoint, SystemPoint } from './api/types'
@@ -20,6 +21,7 @@ const refreshSeconds = ref(30)
 const loading = ref(false)
 const error = ref('')
 const lastUpdated = ref('')
+const alertRefreshKey = ref(0)
 let timer: number | undefined
 
 const rangeLabel = computed(
@@ -75,6 +77,7 @@ async function load() {
     processes.value = latestData.processes
     health.value = healthData
     lastUpdated.value = formatDateTime(new Date().toISOString())
+    alertRefreshKey.value++
   } catch (e) {
     error.value = (e as Error).message
   } finally {
@@ -204,5 +207,7 @@ onBeforeUnmount(() => {
     />
 
     <ProcessTable :processes="processes" />
+
+    <AlertsPanel :refresh-key="alertRefreshKey" />
   </div>
 </template>

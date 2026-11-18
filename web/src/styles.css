@@ -306,6 +306,43 @@ td.empty {
   padding: 24px;
 }
 
+/* ---------- 告警 ---------- */
+.alert-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tag {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  border: 1px solid transparent;
+}
+
+.tag.critical {
+  color: #fecaca;
+  background: rgba(248, 113, 113, 0.15);
+  border-color: rgba(248, 113, 113, 0.45);
+}
+
+.tag.warning {
+  color: #fde68a;
+  background: rgba(251, 191, 36, 0.14);
+  border-color: rgba(251, 191, 36, 0.4);
+}
+
+.tag.firing {
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.18);
+}
+
+.tag.resolved {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.15);
+}
+
 /* ---------- 登录 ---------- */
 .login-wrap {
   min-height: 100vh;

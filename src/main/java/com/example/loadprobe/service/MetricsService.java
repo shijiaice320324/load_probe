@@ -1,5 +1,7 @@
 package com.example.loadprobe.service;
 
+import com.example.loadprobe.alert.AlertService;
+import com.example.loadprobe.collector.CollectionStatus;
 import com.example.loadprobe.collector.MetricsCollector;
 import com.example.loadprobe.collector.ProcessSample;
 import com.example.loadprobe.collector.SystemSample;
@@ -21,11 +23,17 @@ public class MetricsService {
     private final MetricsCollector collector;
     private final MetricsRepository repository;
     private final LoadProbeProperties properties;
+    private final AlertService alertService;
+    private final CollectionStatus collectionStatus;
 
-    public MetricsService(MetricsCollector collector, MetricsRepository repository, LoadProbeProperties properties) {
+    public MetricsService(MetricsCollector collector, MetricsRepository repository,
+                          LoadProbeProperties properties, AlertService alertService,
+                          CollectionStatus collectionStatus) {
         this.collector = collector;
         this.repository = repository;
         this.properties = properties;
+        this.alertService = alertService;
+        this.collectionStatus = collectionStatus;
     }
 
     @Scheduled(initialDelayString = "5000", fixedDelayString = "#{${loadprobe.interval-seconds} * 1000}")
@@ -43,6 +51,10 @@ public class MetricsService {
 
             List<ProcessSample> processes = collector.collectTopProcesses(collectedAt, properties.getTopProcessCount());
             repository.insertProcesses(processes, properties.getHost());
+
+            // 采集成功后再标记时间并做告警判定，避免把失败的一轮当成正常
+            collectionStatus.markCollected(collectedAt);
+            alertService.onCollection(system, collectedAt);
 
             log.info("采集完成 host={} cpu={}% mem={}% ({}MB/{}MB) disk={}% netIn={}B/s netOut={}B/s topProcesses={} 耗时={}ms",
                     properties.getHost(), system.cpuUsagePct(), system.memUsagePct(),
