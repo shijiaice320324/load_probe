@@ -64,8 +64,14 @@ public class AlertRepository {
     }
 
     public void markNotified(long alertId, String channel) {
-        jdbc.update("UPDATE alerts SET notified_at = now(), notify_channel = ?, notify_error = NULL WHERE id = ?",
-                channel, alertId);
+        if ("log".equals(channel)) {
+            // 日志只是兜底，不覆盖真实渠道的失败原因
+            jdbc.update("UPDATE alerts SET notified_at = now(), notify_channel = coalesce(notify_channel, ?) WHERE id = ?",
+                    channel, alertId);
+        } else {
+            jdbc.update("UPDATE alerts SET notified_at = now(), notify_channel = ?, notify_error = NULL WHERE id = ?",
+                    channel, alertId);
+        }
     }
 
     public void markNotifyFailed(long alertId, String error) {

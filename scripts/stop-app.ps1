@@ -1,8 +1,17 @@
 ﻿param(
-    [int[]]$Ports = @(8443, 443, 5173)
+    # 支持 -Ports 8443,443 或 -Ports 8443 -Ports 443 两种写法
+    [string[]]$Ports = @('8443', '443', '5173')
 )
 
-foreach ($port in $Ports) {
+$targets = @()
+foreach ($item in $Ports) {
+    foreach ($part in ($item -split ',')) {
+        $trimmed = $part.Trim()
+        if ($trimmed -match '^\d+$') { $targets += [int]$trimmed }
+    }
+}
+
+foreach ($port in ($targets | Sort-Object -Unique)) {
     $lines = netstat -ano | Select-String ":$port\s" | Select-String 'LISTENING'
     $pids = @()
     foreach ($line in $lines) {

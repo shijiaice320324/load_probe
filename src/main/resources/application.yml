@@ -38,8 +38,9 @@ spring:
   lifecycle:
     timeout-per-shutdown-phase: 10s
   # 告警邮件：账号授权码放 config/local.env，不要写进仓库
+  # 注意：新浪 smtp.sina.com.cn 的证书只覆盖 *.sina.com，用 smtp.sina.com 才能通过 TLS 校验
   mail:
-    host: ${LOADPROBE_MAIL_HOST:smtp.sina.com.cn}
+    host: ${LOADPROBE_MAIL_HOST:smtp.sina.com}
     port: ${LOADPROBE_MAIL_PORT:465}
     username: ${LOADPROBE_MAIL_USERNAME:}
     password: ${LOADPROBE_MAIL_PASSWORD:}

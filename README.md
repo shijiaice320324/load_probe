@@ -248,6 +248,11 @@ LOADPROBE_ALERT_EMAIL=shijiaice@sina.com
 
 3. 重启后端：`scripts\rebuild-backend.cmd`
 
+> **新浪邮箱的坑**：`smtp.sina.com.cn` 的证书 SAN 只包含 `*.sina.com`，用 `.com.cn` 域名连 465 会报
+> `SSLHandshakeException: No subject alternative DNS name matching smtp.sina.com.cn found`。
+> 因此默认 `LOADPROBE_MAIL_HOST` 用 **`smtp.sina.com`**（同一套服务，证书匹配）。
+> 587 / 25 端口在新浪不可用（不支持 STARTTLS），必须用 **465 + 隐式 SSL**。
+
 未配置授权码时，告警仍会落库并写日志（渠道记为 `log`），只是不发邮件。
 
 ### 查询接口
